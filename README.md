@@ -1,0 +1,168 @@
+# cy-app
+
+Scaffold a production-ready **Next.js + shadcn** project in one command — always latest, never stale.
+
+```bash
+npx cy-app my-app
+```
+
+[![npm version](https://img.shields.io/npm/v/cy-app)](https://www.npmjs.com/package/cy-app)
+[![license: MIT](https://img.shields.io/badge/license-MIT-green)](LICENSE)
+
+## Why cy-app?
+
+Starting a new Next.js project the "right" way takes 30+ minutes every time: `create-next-app`, shadcn init, picking components, wiring Supabase (browser + server + proxy), adding animation libraries, env files, git. And static starters go stale within weeks.
+
+cy-app is different:
+
+- **Always latest** — it runs `create-next-app@latest` and `shadcn@latest` on every run. There is no frozen template to rot.
+- **Presets, not decisions** — pick Minimal, Standard, Full, or go Custom. Sensible defaults, zero config.
+- **Real integrations, not stubs** — Supabase ships with browser, server, proxy, and admin clients. Animations ship with Motion, GSAP, and shared helpers.
+- **Guided when you want it, silent when you don't** — arrow-key interactive setup, or one-line `--yes` for CI.
+
+## Quick start
+
+```bash
+npx cy-app my-app
+cd my-app
+npm run dev
+```
+
+Or scaffold into the current (empty) folder:
+
+```bash
+mkdir my-app && cd my-app
+npx cy-app .
+```
+
+Works with every runner: `npx`, `bunx`, `pnpm dlx`, `yarn dlx`.
+
+## Usage
+
+**Interactive (recommended first time)** — explains the presets, then asks step by step:
+
+```bash
+npx cy-app my-app
+```
+
+**Non-interactive** — for CI or when you know what you want:
+
+```bash
+npx cy-app my-app --yes                        # standard preset
+npx cy-app my-app --yes --preset minimal       # Next.js + shadcn only
+npx cy-app my-app --yes --preset full          # absolutely everything
+npx cy-app my-app --yes --pm bun --no-git      # bun + no git init
+```
+
+**Shortcuts** — any flag overrides the preset:
+
+```bash
+npx cy-app my-app --database supabase   # add Supabase to any preset
+npx cy-app my-app --animations          # add Motion + GSAP to any preset
+npx cy-app my-app --shadcn-preset a1Dg5eFl  # use your own shadcn design preset
+```
+
+## Flags
+
+| Flag | Default | Description |
+| ---- | ------- | ----------- |
+| `--pm <manager>` | `npm` | Package manager: `bun` \| `pnpm` \| `npm` \| `yarn` |
+| `--preset <name>` | prompted | `minimal` \| `standard` \| `full` \| `custom` |
+| `--shadcn-preset <code>` | `bJiC` | shadcn design preset code (see below) |
+| `--database <provider>` | preset | `none` \| `supabase` |
+| `--animations` | off | Add Motion + GSAP |
+| `--no-shadcn` | — | Skip the shadcn setup |
+| `--no-git` | — | Skip `git init` |
+| `--yes` | — | Skip all prompts (uses `standard`) |
+
+## Presets
+
+| Preset | Contents |
+| ------ | -------- |
+| `minimal` | Next.js (TypeScript, Tailwind v4, ESLint, App Router, no `src/`) + 5 core shadcn components (`button`, `card`, `input`, `dialog`, `sonner`) |
+| `standard` | Everything in Minimal, but **all** shadcn components (via registry `--all`) + Motion, no database |
+| `full` | Everything in Standard + Supabase (client + server + proxy + admin) + GSAP |
+| `custom` | You pick everything: shadcn preset code, database, animation libraries, individual components (with an "All" shortcut), git |
+
+## How it works
+
+1. **Next.js** — `create-next-app@latest` with TypeScript, Tailwind, ESLint, App Router, `@/*` alias. No `src/` folder.
+2. **shadcn** — `init -y --template next --preset <code>` using the official preset flow, run through the matching runner (`bunx --bun` / `pnpm dlx` / `npx`). Then installs components: your picks, or `--all` for the entire live registry. If a bulk install fails, it retries one by one and reports skips instead of sinking the setup.
+3. **Template** — files in `template/` are copied over the fresh project (currently `.env.example`).
+4. **Animations** — installs `motion@latest` / `gsap@latest` and writes `lib/animations.ts` with shared `fadeUp` variants, a `gsap` re-export, and a `prefersReducedMotion()` helper.
+5. **Database** — installs `@supabase/ssr` + `@supabase/supabase-js` and writes the full client set (see below), then appends keys to `.env.example`.
+6. **git init** (unless `--no-git`).
+
+## shadcn preset codes
+
+A preset packs an entire shadcn design system (colors, theme, fonts, radius, icon library) into a short code. cy-app defaults to `bJiC`.
+
+To use your own: design it at [ui.shadcn.com/create](https://ui.shadcn.com/create), copy the code, and pass it:
+
+```bash
+npx cy-app my-app --shadcn-preset YOUR_CODE
+```
+
+## Supabase integration
+
+Generated projects get a complete, docs-current setup (`@supabase/ssr` cookie-based auth):
+
+| File | Purpose |
+| ---- | ------- |
+| `lib/supabase/client.ts` | Browser client for Client Components |
+| `lib/supabase/server.ts` | Server client for Server Components, Actions, Route Handlers |
+| `lib/supabase/proxy.ts` | `updateSession()` — refreshes the Auth session on every request via verified `getClaims()` |
+| `proxy.ts` | Next.js 16 Proxy entrypoint with static-asset matcher |
+| `lib/supabase/admin.ts` | Server-only admin client (bypasses RLS — never import in the browser) |
+
+Environment (`.env.example` → copy to `.env.local`):
+
+```bash
+NEXT_PUBLIC_SUPABASE_URL=your-project-url
+NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY=your-publishable-key
+SUPABASE_SECRET_KEY=your-secret-key   # server-only, no NEXT_PUBLIC prefix
+```
+
+If the keys are missing, the Proxy silently skips session refresh so the app still runs — auth activates automatically once keys are added.
+
+## Generated project structure
+
+```text
+my-app/
+├── app/                 # App Router (page, layout, globals.css)
+├── components/ui/       # shadcn components
+├── hooks/               # e.g. use-mobile
+├── lib/
+│   ├── animations.ts    # Motion and/or GSAP helpers (with --animations)
+│   ├── supabase/        # client, server, proxy, admin (with --database supabase)
+│   └── utils.ts         # shadcn cn() helper
+├── proxy.ts             # Supabase session refresh (with --database supabase)
+├── components.json      # shadcn config
+└── .env.example         # copy to .env.local and fill in
+```
+
+## Customization
+
+Fork it and make it yours:
+
+- `src/presets.js` — preset contents and component lists.
+- `template/` — any file placed here is copied over every new project.
+- `src/addons.js` — follow the Supabase example to add new providers.
+- `src/options.js` — questions, flags, and the guided flow.
+
+## Requirements
+
+- Node.js >= 18
+- One of: npm, pnpm, yarn, or bun
+
+## Local development
+
+```bash
+npm install
+node ./bin/cli.js test-app --yes --no-git   # scaffold a test project
+node scripts/check-turkish.mjs               # repo must stay English-only
+```
+
+## License
+
+MIT

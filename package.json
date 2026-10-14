@@ -1,0 +1,26 @@
+{
+  "name": "cy-app",
+  "version": "0.1.0",
+  "description": "Scaffold a fresh Next.js + shadcn project in one command: npx cy-app my-app",
+  "type": "module",
+  "license": "MIT",
+  "bin": {
+    "cy-app": "./bin/cli.js"
+  },
+  "files": [
+    "bin",
+    "src",
+    "template"
+  ],
+  "engines": {
+    "node": ">=18"
+  },
+  "dependencies": {
+    "@clack/prompts": "^1.8.1",
+    "chalk": "^5.4.1",
+    "commander": "^12.1.0",
+    "execa": "^9.5.2",
+    "fs-extra": "^11.3.0",
+    "validate-npm-package-name": "^7.0.1"
+  }
+}
