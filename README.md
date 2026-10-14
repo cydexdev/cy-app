@@ -71,6 +71,7 @@ npx cy-app my-app --shadcn-preset a1Dg5eFl  # use your own shadcn design preset
 | `--shadcn-preset <code>` | `bJiC` | shadcn design preset code (see below) |
 | `--database <provider>` | preset | `none` \| `supabase` |
 | `--animations` | off | Add Motion + GSAP |
+| `--no-theme` | — | Skip dark-mode theme wiring |
 | `--no-shadcn` | — | Skip the shadcn setup |
 | `--no-git` | — | Skip `git init` |
 | `--yes` | — | Skip all prompts (uses `standard`) |
@@ -79,8 +80,8 @@ npx cy-app my-app --shadcn-preset a1Dg5eFl  # use your own shadcn design preset
 
 | Preset | Contents |
 | ------ | -------- |
-| `minimal` | Next.js (TypeScript, Tailwind v4, ESLint, App Router, no `src/`) + 5 core shadcn components (`button`, `card`, `input`, `dialog`, `sonner`) |
-| `standard` | Everything in Minimal, but **all** shadcn components (via registry `--all`) + Motion, no database |
+| `minimal` | Next.js (TypeScript, Tailwind v4, ESLint, App Router, no `src/`) + 5 core shadcn components (`button`, `card`, `input`, `dialog`, `sonner`) + dark-mode theme |
+| `standard` | Everything in Minimal, but **all** shadcn components (via registry `--all`) + Motion + dark-mode theme, no database |
 | `full` | Everything in Standard + Supabase (client + server + proxy + admin) + GSAP |
 | `custom` | You pick everything: shadcn preset code, database, animation libraries, individual components (with an "All" shortcut), git |
 
@@ -89,9 +90,10 @@ npx cy-app my-app --shadcn-preset a1Dg5eFl  # use your own shadcn design preset
 1. **Next.js** — `create-next-app@latest` with TypeScript, Tailwind, ESLint, App Router, `@/*` alias. No `src/` folder.
 2. **shadcn** — `init -y --template next --preset <code>` using the official preset flow, run through the matching runner (`bunx --bun` / `pnpm dlx` / `npx`). Then installs components: your picks, or `--all` for the entire live registry. If a bulk install fails, it retries one by one and reports skips instead of sinking the setup.
 3. **Template** — files in `template/` are copied over the fresh project (currently `.env.example`).
-4. **Animations** — installs `motion@latest` / `gsap@latest` and writes `lib/animations.ts` with shared `fadeUp` variants, a `gsap` re-export, and a `prefersReducedMotion()` helper.
-5. **Database** — installs `@supabase/ssr` + `@supabase/supabase-js` and writes the full client set (see below), then appends keys to `.env.example`.
-6. **git init** (unless `--no-git`).
+4. **Theme** — installs `next-themes@latest` + `lucide-react@latest`, writes `components/theme-provider.tsx` and `components/mode-toggle.tsx`, and wires the root layout (`ThemeProvider` + `suppressHydrationWarning`). Skip with `--no-theme`.
+5. **Animations** — installs `motion@latest` / `gsap@latest` and writes `lib/animations.ts` with shared `fadeUp` variants, a `gsap` re-export, and a `prefersReducedMotion()` helper.
+6. **Database** — installs `@supabase/ssr` + `@supabase/supabase-js` and writes the full client set (see below), then appends keys to `.env.example`.
+7. **git init** (unless `--no-git`).
 
 ## shadcn preset codes
 
@@ -102,6 +104,16 @@ To use your own: design it at [ui.shadcn.com/create](https://ui.shadcn.com/creat
 ```bash
 npx cy-app my-app --shadcn-preset YOUR_CODE
 ```
+
+## Dark-mode theme
+
+Every shadcn install ships with dark-mode CSS variables (`.dark` selector in `globals.css`), but without wiring they are dead weight — cy-app wires them up following the official shadcn recipe:
+
+- `components/theme-provider.tsx` — `next-themes` wrapper (system-aware, class attribute)
+- `components/mode-toggle.tsx` — Sun/Moon toggle button (hydration-safe, no extra component deps)
+- `app/layout.tsx` — patched automatically (`ThemeProvider` + `suppressHydrationWarning`)
+
+Drop `<ModeToggle />` anywhere (e.g. the navbar) and it just works. Disable with `--no-theme`.
 
 ## Supabase integration
 

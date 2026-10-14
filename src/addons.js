@@ -1,6 +1,7 @@
 import path from 'node:path';
 import fs from 'fs-extra';
 import { execa } from 'execa';
+import * as p from '@clack/prompts';
 
 // ---------------------------------------------------------------------------
 // Helpers
@@ -236,4 +237,126 @@ export async function setupAnimations(config, spinner) {
   );
 
   spinner.stop('Animation libraries ready');
+}
+
+// ---------------------------------------------------------------------------
+// Dark-mode theme (official shadcn recipe):
+// next-themes + ThemeProvider + ModeToggle + root layout wiring.
+// ---------------------------------------------------------------------------
+
+const THEME_PROVIDER = `"use client";
+
+import * as React from 'react';
+import { ThemeProvider as NextThemesProvider } from 'next-themes';
+
+export function ThemeProvider({
+  children,
+  ...props
+}: React.ComponentProps<typeof NextThemesProvider>) {
+  return <NextThemesProvider {...props}>{children}</NextThemesProvider>;
+}
+`;
+
+const MODE_TOGGLE = `"use client";
+
+import * as React from 'react';
+import { Moon, Sun } from 'lucide-react';
+import { useTheme } from 'next-themes';
+import { Button } from '@/components/ui/button';
+
+export function ModeToggle() {
+  const { resolvedTheme, setTheme } = useTheme();
+  const [mounted, setMounted] = React.useState(false);
+
+  React.useEffect(() => {
+    setMounted(true);
+  }, []);
+
+  if (!mounted) {
+    return (
+      <Button variant="outline" size="icon" disabled>
+        <span className="sr-only">Toggle theme</span>
+      </Button>
+    );
+  }
+
+  return (
+    <Button
+      variant="outline"
+      size="icon"
+      aria-label="Toggle theme"
+      onClick={() => setTheme(resolvedTheme === 'dark' ? 'light' : 'dark')}
+    >
+      <Sun className="h-[1.2rem] w-[1.2rem] scale-100 rotate-0 transition-all dark:scale-0 dark:-rotate-90" />
+      <Moon className="absolute h-[1.2rem] w-[1.2rem] scale-0 rotate-90 transition-all dark:scale-100 dark:rotate-0" />
+      <span className="sr-only">Toggle theme</span>
+    </Button>
+  );
+}
+`;
+
+const THEME_IMPORT_ANCHOR = 'import "./globals.css";';
+const THEME_IMPORT_LINE = 'import { ThemeProvider } from "@/components/theme-provider";';
+const THEME_WRAPPER_OPEN =
+  '<ThemeProvider attribute="class" defaultTheme="system" enableSystem disableTransitionOnChange>';
+const THEME_WRAPPER_CLOSE = '</ThemeProvider>';
+
+/**
+ * Patches app/layout.tsx: provider import, suppressHydrationWarning,
+ * and ThemeProvider wrapping {children}. Returns true on success.
+ * Anything unexpected -> false, and the caller prints manual steps.
+ */
+async function patchRootLayout(targetDir) {
+  const layoutPath = path.join(targetDir, 'app', 'layout.tsx');
+  if (!(await fs.pathExists(layoutPath))) return false;
+
+  const original = await fs.readFile(layoutPath, 'utf8');
+  if (original.includes(THEME_WRAPPER_OPEN)) return true; // already wired
+  if (
+    !original.includes(THEME_IMPORT_ANCHOR) ||
+    !original.includes('<html') ||
+    !original.includes('{children}')
+  ) {
+    return false;
+  }
+
+  const patched = original
+    .replace(THEME_IMPORT_ANCHOR, `${THEME_IMPORT_ANCHOR}\n${THEME_IMPORT_LINE}`)
+    .replace('<html', '<html suppressHydrationWarning')
+    .replace('{children}', `${THEME_WRAPPER_OPEN}{children}${THEME_WRAPPER_CLOSE}`);
+
+  if (
+    !patched.includes(THEME_IMPORT_LINE) ||
+    !patched.includes('suppressHydrationWarning') ||
+    !patched.includes(THEME_WRAPPER_OPEN)
+  ) {
+    return false;
+  }
+
+  await fs.writeFile(layoutPath, patched);
+  return true;
+}
+
+export async function setupTheme(config, spinner) {
+  spinner.start('Adding dark-mode theme...');
+
+  await installPackages(config, ['next-themes@latest', 'lucide-react@latest']);
+
+  await fs.outputFile(
+    path.join(config.targetDir, 'components', 'theme-provider.tsx'),
+    THEME_PROVIDER
+  );
+  await fs.outputFile(
+    path.join(config.targetDir, 'components', 'mode-toggle.tsx'),
+    MODE_TOGGLE
+  );
+
+  if (await patchRootLayout(config.targetDir)) {
+    spinner.stop('Dark-mode theme ready (layout wired)');
+  } else {
+    spinner.stop('Dark-mode theme files ready (layout needs manual wiring)');
+    p.log.warn(
+      'Could not patch app/layout.tsx automatically. Wrap {children} with ThemeProvider from @/components/theme-provider and add suppressHydrationWarning to <html>.'
+    );
+  }
 }

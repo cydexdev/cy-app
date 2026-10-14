@@ -4,7 +4,7 @@ import chalk from 'chalk';
 import { showBanner } from './banner.js';
 import { resolveConfig } from './options.js';
 import { scaffoldNextJs, setupShadcn, applyTemplate, initGit } from './scaffold.js';
-import { setupSupabase, setupAnimations } from './addons.js';
+import { setupSupabase, setupAnimations, setupTheme } from './addons.js';
 
 // ---------------------------------------------------------------------------
 // create-cy-app — orchestrates the whole scaffolding flow.
@@ -27,6 +27,10 @@ export async function run() {
     }
 
     await applyTemplate(config, spinner);
+
+    if (config.theme) {
+      await setupTheme(config, spinner);
+    }
 
     if (config.animations.length > 0) {
       await setupAnimations(config, spinner);

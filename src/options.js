@@ -27,6 +27,7 @@ export function parseCli() {
     .option('--preset <name>', `preset (${PRESETS.join(' | ')} | custom)`, undefined)
     .option('--database <provider>', 'database provider (none | supabase)', undefined)
     .option('--animations', 'add Motion + GSAP animation libraries')
+    .option('--no-theme', 'skip dark-mode theme wiring (next-themes + toggle)')
     .option('--shadcn-preset <code>', 'shadcn design preset code (from ui.shadcn.com/create)', 'bJiC')
     .option('--no-shadcn', 'skip the shadcn setup')
     .option('--no-git', 'skip git init')
@@ -151,6 +152,12 @@ async function askCustomOptions(step, defaultShadcnPreset) {
   });
   if (p.isCancel(git)) process.exit(0);
 
+  const theme = await p.confirm({
+    message: step('Add dark-mode theme? (next-themes + toggle, layout wired)'),
+    initialValue: true,
+  });
+  if (p.isCancel(theme)) process.exit(0);
+
   return {
     shadcnPreset,
     database,
@@ -158,6 +165,7 @@ async function askCustomOptions(step, defaultShadcnPreset) {
     // "All components" wins over any individual picks.
     components: components.includes(ALL_COMPONENTS) ? [ALL_COMPONENTS] : components,
     git,
+    theme,
   };
 }
 
@@ -218,10 +226,12 @@ export async function resolveConfig() {
   let { database, animations, components } = base;
   let git = opts.git;
   let shadcnPreset = opts.shadcnPreset;
+  let theme = opts.theme;
 
   if (preset === 'custom' && !opts.yes) {
     const custom = await askCustomOptions(step, opts.shadcnPreset);
     shadcnPreset = custom.shadcnPreset;
+    theme = custom.theme;
     database = custom.database;
     animations = custom.animations;
     components = custom.components;
@@ -237,12 +247,16 @@ export async function resolveConfig() {
 
   const shadcn = opts.shadcn;
 
+  // Theme wiring needs shadcn components + layout — never without shadcn.
+  theme = shadcn && theme;
+
   p.note(
     [
       `Project:    ${projectName}`,
       `Preset:     ${preset}`,
       `PM:         ${pm}`,
       `shadcn:     ${shadcn ? `${describeComponents(components)} (preset ${shadcnPreset})` : 'skipped'}`,
+      `Theme:      ${theme ? 'dark-mode wired' : 'off'}`,
       `Database:   ${database}`,
       `Animations: ${animations.length ? animations.join(' + ') : 'none'}`,
       `Git:        ${git ? 'yes' : 'no'}`,
@@ -250,7 +264,7 @@ export async function resolveConfig() {
     'Summary — here is what will be installed'
   );
 
-  return { projectName, targetDir, pm, preset, database, animations, components, shadcn, shadcnPreset, git };
+  return { projectName, targetDir, pm, preset, database, animations, components, shadcn, shadcnPreset, theme, git };
 }
 
 function printIntro() {
