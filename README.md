@@ -109,7 +109,7 @@ npx cy-app my-app --shadcn-preset YOUR_CODE
 
 Every shadcn install ships with dark-mode CSS variables (`.dark` selector in `globals.css`), but without wiring they are dead weight — cy-app wires them up following the official shadcn recipe:
 
-- `components/theme-provider.tsx` — `next-themes` wrapper (system-aware, class attribute)
+- `components/theme-provider.tsx` — `next-themes` wrapper (system-aware, class attribute) with a `D`-key hotkey to toggle theme (typing-aware, ignored inside inputs)
 - `components/mode-toggle.tsx` — Sun/Moon toggle button (hydration-safe, no extra component deps)
 - `app/layout.tsx` — patched automatically (`ThemeProvider` + `suppressHydrationWarning`)
 
