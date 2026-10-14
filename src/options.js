@@ -151,12 +151,6 @@ async function askCustomOptions(step, defaultShadcnPreset) {
   });
   if (p.isCancel(git)) process.exit(0);
 
-  const theme = await p.confirm({
-    message: step('Add dark-mode theme? (next-themes + toggle, layout wired)'),
-    initialValue: true,
-  });
-  if (p.isCancel(theme)) process.exit(0);
-
   return {
     shadcnPreset,
     database,
@@ -164,7 +158,6 @@ async function askCustomOptions(step, defaultShadcnPreset) {
     // "All components" wins over any individual picks.
     components: components.includes(ALL_COMPONENTS) ? [ALL_COMPONENTS] : components,
     git,
-    theme,
   };
 }
 
@@ -225,12 +218,13 @@ export async function resolveConfig() {
   let { database, animations, components } = base;
   let git = opts.git;
   let shadcnPreset = opts.shadcnPreset;
-  let theme = opts.theme;
+  // Theme (mode toggle) is always included — shadcn ships in every build.
+  // Opt out with --no-theme. No prompt.
+  const theme = opts.theme;
 
   if (preset === 'custom' && !opts.yes) {
     const custom = await askCustomOptions(step, opts.shadcnPreset);
     shadcnPreset = custom.shadcnPreset;
-    theme = custom.theme;
     database = custom.database;
     animations = custom.animations;
     components = custom.components;

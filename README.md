@@ -169,7 +169,6 @@ Fork it and make it yours:
 ```bash
 npm install
 node ./bin/cli.js test-app --yes --no-git   # scaffold a test project
-node scripts/check-turkish.mjs               # repo must stay English-only
 ```
 
 ## License
