@@ -139,34 +139,48 @@ export async function addShadcnComponents(config, spinner) {
   const runner = shadcnRunner(config.pm);
   const { components } = config;
 
-  if (components.includes(ALL_COMPONENTS)) {
-    // `--all` resolves against the live registry, so this is always
-    // literally every shadcn component — no hardcoded list to maintain.
-    spinner.start('Adding all shadcn components...');
-    await execa(runner.cmd, [...runner.prefix, 'add', '-y', '-o', '--all'], {
-      cwd: config.targetDir,
-      stdio: 'inherit',
-    });
-    spinner.stop('shadcn ready (entire registry)');
-    return;
-  }
+  // `shadcn add` rewrites app/page.tsx into a single-component demo page.
+  // Snapshot the official starter page first, restore it afterwards —
+  // whatever the registry does, the template page survives.
+  const pagePath = path.join(config.targetDir, 'app', 'page.tsx');
+  const officialPage = (await fs.pathExists(pagePath))
+    ? await fs.readFile(pagePath, 'utf8')
+    : null;
 
-  if (components.length > 0) {
-    spinner.start('Adding shadcn components...');
-    try {
-      await addComponentsBulk(runner, config.targetDir, components);
-    } catch {
-      // One bad component name must never sink the whole setup —
-      // retry individually and report what was skipped.
-      spinner.message('Bulk install failed — retrying components one by one...');
-      const failed = await addComponentsOneByOne(runner, config.targetDir, components);
-      if (failed.length > 0) {
-        p.log.warn(`Skipped components (not in registry): ${failed.join(', ')}`);
-      }
+  try {
+    if (components.includes(ALL_COMPONENTS)) {
+      // `--all` resolves against the live registry, so this is always
+      // literally every shadcn component — no hardcoded list to maintain.
+      spinner.start('Adding all shadcn components...');
+      await execa(runner.cmd, [...runner.prefix, 'add', '-y', '-o', '--all'], {
+        cwd: config.targetDir,
+        stdio: 'inherit',
+      });
+      spinner.stop('shadcn ready (entire registry)');
+      return;
     }
-    spinner.stop(`shadcn ready (${components.length} requested)`);
-  } else {
-    spinner.stop('shadcn ready (base only)');
+
+    if (components.length > 0) {
+      spinner.start('Adding shadcn components...');
+      try {
+        await addComponentsBulk(runner, config.targetDir, components);
+      } catch {
+        // One bad component name must never sink the whole setup —
+        // retry individually and report what was skipped.
+        spinner.message('Bulk install failed — retrying components one by one...');
+        const failed = await addComponentsOneByOne(runner, config.targetDir, components);
+        if (failed.length > 0) {
+          p.log.warn(`Skipped components (not in registry): ${failed.join(', ')}`);
+        }
+      }
+      spinner.stop(`shadcn ready (${components.length} requested)`);
+    } else {
+      spinner.stop('shadcn ready (base only)');
+    }
+  } finally {
+    if (officialPage !== null) {
+      await fs.writeFile(pagePath, officialPage);
+    }
   }
 }
 

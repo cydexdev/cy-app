@@ -87,7 +87,7 @@ npx cy-app my-app --shadcn-preset a1Dg5eFl  # use your own shadcn design preset
 ## How it works
 
 1. **Scaffold** — `shadcn init -y --template next --preset <code>` (official flow) creates the Next.js app (TypeScript, Tailwind v4, ESLint, App Router, `@/*` alias, no `src/`) and applies the design preset: theme provider with hotkey, wired layout, dark CSS, fonts. Run through the matching runner (`bunx --bun` / `pnpm dlx` / `npx`), which also picks the package manager.
-2. **Components** — installs your picks, or `--all` for the entire live registry. If a bulk install fails, it retries one by one and reports skips instead of sinking the setup.
+2. **Components** — installs your picks, or `--all` for the entire live registry. shadcn's `add` rewrites `app/page.tsx` into a demo behind the scenes, so the official starter page is snapshotted first and restored afterwards. If a bulk install fails, it retries one by one and reports skips instead of sinking the setup.
 3. **Template** — files in `template/` are copied over the fresh project (currently `.env.example`).
 4. **Theme** — writes `components/mode-toggle.tsx` (Sun/Moon button). Skip with `--no-theme`.
 5. **Animations** — installs `motion@latest` / `gsap@latest` and writes `lib/animations.ts` with shared `fadeUp` variants, a `gsap` re-export, and a `prefersReducedMotion()` helper.
