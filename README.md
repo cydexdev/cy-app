@@ -15,7 +15,7 @@ Starting a new Next.js project the "right" way takes 30+ minutes every time: `cr
 
 cy-app is different:
 
-- **Always latest** — it runs `create-next-app@latest` and `shadcn@latest` on every run. There is no frozen template to rot.
+- **Always latest** — it runs shadcn's official template (`init --template next`) at `@latest` on every run. There is no frozen template to rot.
 - **Presets, not decisions** — pick Minimal, Standard, Full, or go Custom. Sensible defaults, zero config.
 - **Real integrations, not stubs** — Supabase ships with browser, server, proxy, and admin clients. Animations ship with Motion, GSAP, and shared helpers.
 - **Guided when you want it, silent when you don't** — arrow-key interactive setup, or one-line `--yes` for CI.
@@ -71,8 +71,7 @@ npx cy-app my-app --shadcn-preset a1Dg5eFl  # use your own shadcn design preset
 | `--shadcn-preset <code>` | `bJiC` | shadcn design preset code (see below) |
 | `--database <provider>` | preset | `none` \| `supabase` |
 | `--animations` | off | Add Motion + GSAP |
-| `--no-theme` | — | Skip dark-mode theme wiring |
-| `--no-shadcn` | — | Skip the shadcn setup |
+| `--no-theme` | — | Skip the mode toggle |
 | `--no-git` | — | Skip `git init` |
 | `--yes` | — | Skip all prompts (uses `standard`) |
 
@@ -87,10 +86,10 @@ npx cy-app my-app --shadcn-preset a1Dg5eFl  # use your own shadcn design preset
 
 ## How it works
 
-1. **Next.js** — `create-next-app@latest` with TypeScript, Tailwind, ESLint, App Router, `@/*` alias. No `src/` folder.
-2. **shadcn** — `init -y --template next --preset <code>` using the official preset flow, run through the matching runner (`bunx --bun` / `pnpm dlx` / `npx`). Then installs components: your picks, or `--all` for the entire live registry. If a bulk install fails, it retries one by one and reports skips instead of sinking the setup.
+1. **Scaffold** — `shadcn init -y --template next --preset <code>` (official flow) creates the Next.js app (TypeScript, Tailwind v4, ESLint, App Router, `@/*` alias, no `src/`) and applies the design preset: theme provider with hotkey, wired layout, dark CSS, fonts. Run through the matching runner (`bunx --bun` / `pnpm dlx` / `npx`), which also picks the package manager.
+2. **Components** — installs your picks, or `--all` for the entire live registry. If a bulk install fails, it retries one by one and reports skips instead of sinking the setup.
 3. **Template** — files in `template/` are copied over the fresh project (currently `.env.example`).
-4. **Theme** — installs `next-themes@latest` + `lucide-react@latest`, writes `components/theme-provider.tsx` and `components/mode-toggle.tsx`, and wires the root layout (`ThemeProvider` + `suppressHydrationWarning`). Skip with `--no-theme`.
+4. **Theme** — writes `components/mode-toggle.tsx` (Sun/Moon button). Skip with `--no-theme`.
 5. **Animations** — installs `motion@latest` / `gsap@latest` and writes `lib/animations.ts` with shared `fadeUp` variants, a `gsap` re-export, and a `prefersReducedMotion()` helper.
 6. **Database** — installs `@supabase/ssr` + `@supabase/supabase-js` and writes the full client set (see below), then appends keys to `.env.example`.
 7. **git init** (unless `--no-git`).
@@ -107,11 +106,9 @@ npx cy-app my-app --shadcn-preset YOUR_CODE
 
 ## Dark-mode theme
 
-Every shadcn install ships with dark-mode CSS variables (`.dark` selector in `globals.css`), but without wiring they are dead weight — cy-app wires them up following the official shadcn recipe:
+The template ships dark-mode CSS variables (`.dark` selector in `globals.css`) plus a wired `ThemeProvider` (system-aware, class attribute) with a `D`-key hotkey. cy-app adds the missing piece:
 
-- `components/theme-provider.tsx` — `next-themes` wrapper (system-aware, class attribute) with a `D`-key hotkey to toggle theme (typing-aware, ignored inside inputs)
 - `components/mode-toggle.tsx` — Sun/Moon toggle button (hydration-safe, no extra component deps)
-- `app/layout.tsx` — patched automatically (`ThemeProvider` + `suppressHydrationWarning`)
 
 Drop `<ModeToggle />` anywhere (e.g. the navbar) and it just works. Disable with `--no-theme`.
 

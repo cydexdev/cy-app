@@ -3,11 +3,11 @@ import * as p from '@clack/prompts';
 import chalk from 'chalk';
 import { showBanner } from './banner.js';
 import { resolveConfig } from './options.js';
-import { scaffoldNextJs, setupShadcn, applyTemplate, initGit } from './scaffold.js';
+import { scaffoldNextJs, addShadcnComponents, applyTemplate, initGit } from './scaffold.js';
 import { setupSupabase, setupAnimations, setupTheme } from './addons.js';
 
 // ---------------------------------------------------------------------------
-// create-cy-app — orchestrates the whole scaffolding flow.
+// cy-app — orchestrates the whole scaffolding flow.
 // Each step lives in its own module so this file stays readable.
 // ---------------------------------------------------------------------------
 
@@ -22,9 +22,7 @@ export async function run() {
   try {
     await scaffoldNextJs(config, spinner);
 
-    if (config.shadcn) {
-      await setupShadcn(config, spinner);
-    }
+    await addShadcnComponents(config, spinner);
 
     await applyTemplate(config, spinner);
 

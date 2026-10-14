@@ -27,9 +27,8 @@ export function parseCli() {
     .option('--preset <name>', `preset (${PRESETS.join(' | ')} | custom)`, undefined)
     .option('--database <provider>', 'database provider (none | supabase)', undefined)
     .option('--animations', 'add Motion + GSAP animation libraries')
-    .option('--no-theme', 'skip dark-mode theme wiring (next-themes + toggle)')
+    .option('--no-theme', 'skip the mode toggle (theme itself comes from the template)')
     .option('--shadcn-preset <code>', 'shadcn design preset code (from ui.shadcn.com/create)', 'bJiC')
-    .option('--no-shadcn', 'skip the shadcn setup')
     .option('--no-git', 'skip git init')
     .option('--yes', 'skip all prompts and use defaults')
     .version('0.1.0')
@@ -245,18 +244,13 @@ export async function resolveConfig() {
     animations = ['motion', 'gsap'];
   }
 
-  const shadcn = opts.shadcn;
-
-  // Theme wiring needs shadcn components + layout — never without shadcn.
-  theme = shadcn && theme;
-
   p.note(
     [
       `Project:    ${projectName}`,
       `Preset:     ${preset}`,
       `PM:         ${pm}`,
-      `shadcn:     ${shadcn ? `${describeComponents(components)} (preset ${shadcnPreset})` : 'skipped'}`,
-      `Theme:      ${theme ? 'dark-mode wired' : 'off'}`,
+      `shadcn:     ${describeComponents(components)} (preset ${shadcnPreset})`,
+      `Theme:      ${theme ? 'mode toggle included' : 'off'}`,
       `Database:   ${database}`,
       `Animations: ${animations.length ? animations.join(' + ') : 'none'}`,
       `Git:        ${git ? 'yes' : 'no'}`,
@@ -264,7 +258,7 @@ export async function resolveConfig() {
     'Summary — here is what will be installed'
   );
 
-  return { projectName, targetDir, pm, preset, database, animations, components, shadcn, shadcnPreset, theme, git };
+  return { projectName, targetDir, pm, preset, database, animations, components, shadcnPreset, theme, git };
 }
 
 function printIntro() {
