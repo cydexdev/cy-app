@@ -5,7 +5,7 @@
   "type": "module",
   "license": "MIT",
   "bin": {
-    "cy-app": "./bin/cli.js"
+    "cy-app": "bin/cli.js"
   },
   "files": [
     "bin",
